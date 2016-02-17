@@ -5,7 +5,7 @@ import pdb
 
 
 class Chat():
-    def __init__(self, host=socket.gethostname(), port= 5000):
+    def __init__(self, host=socket.gethostname(), port= 6000):
         s= socket.socket(type=socket.SOCK_DGRAM)
         s.settimeout(0.5)
         s.bind((host, port))
@@ -24,6 +24,7 @@ class Chat():
         self.__address = None
         self.__clientlist= []
         self.__portlist= []
+        self.__index= 0
         threading.Thread(target= self._recieve).start()
         while self.__running:
             line= sys.stdin.readline().rstrip() + ' ' #exm, str: /join Mioz 6000
@@ -54,8 +55,8 @@ class Chat():
                 self.__address= (client, clientport)
                 if client not in self.__clientlist:
                     print('\n' + tokens[0], 'added to contact list\n')
-                    self.__clientlist[:]= [tokens[0]]
-                    self.__portlist[:]= [clientport]
+                    self.__clientlist[self.__index:] = [tokens[0]]
+                    self.__portlist[self.__index:]  = [clientport]
                     self.__index= len(self.__clientlist)
                 print("Connecté à {}: {}".format(*self.__address))
             except OSError:
@@ -82,6 +83,7 @@ class Chat():
             try:
                 data, address = self.__s.recvfrom(512)
                 print(data.decode())
+                print('ok')
             except socket.timeout:
                 pass
             except OSError:
@@ -89,8 +91,9 @@ class Chat():
             
     def _list(self):
         i= 0
+        print('\n---')
         while i < self.__index:
-            print('\n    ' + self.__clientlist[i], '(port:', str(self.__portlist[i]) + ')')
+            print(self.__clientlist[i], '(port:', str(self.__portlist[i]) + ')')
             i +=1
         print('\n---')
             
