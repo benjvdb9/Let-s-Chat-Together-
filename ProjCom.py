@@ -5,7 +5,7 @@ import pdb
 
 
 class Chat():
-    def __init__(self, host=socket.gethostname(), port= 6000):
+    def __init__(self, host="172.17.10.58", port= 3010):
         s= socket.socket(type=socket.SOCK_DGRAM)
         s.settimeout(0.5)
         s.bind((host, port))
@@ -48,12 +48,12 @@ class Chat():
 
     def _join(self, param):
         tokens = param.split(' ')
-        client= socket.gethostbyaddr(tokens[0])[0]
+        client= tokens[0]
         clientport= int(tokens[1])
         if len(tokens) == 2:
             try:
                 self.__address= (client, clientport)
-                if client not in self.__clientlist:
+                if tokens[0] not in self.__clientlist:
                     print('\n' + tokens[0], 'added to contact list\n')
                     self.__clientlist[self.__index:] = [tokens[0]]
                     self.__portlist[self.__index:]  = [clientport]
