@@ -5,7 +5,7 @@ import pdb
 
 
 class Chat():
-    def __init__(self, host="172.17.10.58", port= 3010):
+    def __init__(self, host=socket.gethostname(), port= 5000):
         s= socket.socket(type=socket.SOCK_DGRAM)
         s.settimeout(0.5)
         s.bind((host, port))
@@ -23,8 +23,8 @@ class Chat():
         self.__running = True
         self.__address = None
         self.__clientlist= []
+        self.__tokenslist= []
         self.__portlist= []
-        self.__index= 0
         threading.Thread(target= self._recieve).start()
         while self.__running:
             line= sys.stdin.readline().rstrip() + ' ' #exm, str: /join Mioz 6000
@@ -48,15 +48,16 @@ class Chat():
 
     def _join(self, param):
         tokens = param.split(' ')
-        client= tokens[0]
+        client= socket.gethostbyaddr(tokens[0])[0]
         clientport= int(tokens[1])
         if len(tokens) == 2:
             try:
                 self.__address= (client, clientport)
-                if tokens[0] not in self.__clientlist:
+                if client not in self.__clientlist:
                     print('\n' + tokens[0], 'added to contact list\n')
-                    self.__clientlist[self.__index:] = [tokens[0]]
-                    self.__portlist[self.__index:]  = [clientport]
+                    self.__clientlist[:] = [client]
+                    self.__tokenslist[:] = [tokens[0]]
+                    self.__portlist[:]  = [clientport]
                     self.__index= len(self.__clientlist)
                 print("Connecté à {}: {}".format(*self.__address))
             except OSError:
@@ -83,7 +84,6 @@ class Chat():
             try:
                 data, address = self.__s.recvfrom(512)
                 print(data.decode())
-                print('ok')
             except socket.timeout:
                 pass
             except OSError:
@@ -91,17 +91,17 @@ class Chat():
             
     def _list(self):
         i= 0
-        print('\n---')
+        print('\nLIST\n---')
         while i < self.__index:
-            print(self.__clientlist[i], '(port:', str(self.__portlist[i]) + ')')
+            print('    ' + self.__clientlist[i], '['+ str(self.__tokenslist[i])+ '] (port:', str(self.__portlist[i]) + ')')
             i +=1
-        print('\n---')
+        print('---')
             
     def Address(self):
         return self.__address
 
 if __name__ == '__main__':
     if len(sys.argv) == 3:
-        Chat(sys.argv[1], int(argv[2])).run() #Sert a changer l'info du récepteur
+        Chat(sys.argv[1], int(sys.argv[2])).run() #Sert a changer l'info du récepteur
     else:
         Chat().run()
