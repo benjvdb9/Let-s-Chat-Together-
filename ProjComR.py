@@ -17,12 +17,10 @@ class EchoServer():
         self.__s.listen()
         while True:
             client, addr = self.__s.accept()
-
             try:
-                print(self._receive(client).decode())
-                msg= self._receive(client)
-                client.send(msg)
-                print('ok')
+                reqst= self._receive(client) 
+                print(reqst.decode())
+                client.send(reqst)
                 client.close()
             except OSError:
                 print('Erreur lors de la réception du message.')
@@ -38,8 +36,8 @@ class EchoServer():
 
 
 class EchoClient():
-    def __init__(self, message):
-        self.__message = message
+    def __init__(self, IPrequest):
+        self.__request = IPrequest
         self.__s = socket.socket()
     
     def run(self):
@@ -52,12 +50,12 @@ class EchoClient():
     
     def _send(self):
         totalsent = 0
-        msg = self.__message
+        rqs = self.__request
         try:
-            while totalsent < len(msg):
-                sent = self.__s.send(msg[totalsent:])
+            while totalsent < len(rqs):
+                sent = self.__s.send(rqs[totalsent:])
                 totalsent += sent
-            return msg.decode()
+            return reqst.decode()
         except OSError:
             print("Erreur lors de l'envoi du message.")
 
