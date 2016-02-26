@@ -15,6 +15,7 @@ class EchoServer():
         self.__s.bind(SERVERADDRESS)
         self.__addr = ''
         self.__clientlist = []
+        self.__namelist = []
         
     def run(self):
         self.__s.listen()
@@ -55,7 +56,7 @@ class EchoServer():
             print(data)
             chunks.append(data)
             finished = data == b''
-        bpp = b''.join(chunks).decode()[4:] #Les 4 premières lettres ervent a identifier le type de requète
+        bpp = b''.join(chunks).decode()[4:] #Les 4 premières lettres servent a identifier le type de requète
         code =b''.join(chunks).decode()[:4]
         print('Code:', code)
         return bpp
@@ -70,7 +71,13 @@ class EchoServer():
         if self.__addr not in datbase:
             self.__clientlist += [self.__addr]
             print('ClientList:', self.__clientlist)
-            #database= {self.__clientlist[i]: self.__IPlist[i] for i in range(0, len(self.__clientlist))}
+            name = socket.gethostbyaddr(self.__addr)
+            print('Name:', name)
+            self.__namelist += [name]
+            maxi = len(self.__clientlist)
+            dbse = {self.__clientlist[i] : [self.__clientlist[i], self.__namelist[i]] for i in range(0, maxi)}
+            with open('database.txt', 'w') as file:
+                file.write(str(dbse))
             #return database
 
 
