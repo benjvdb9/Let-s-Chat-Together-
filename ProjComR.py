@@ -13,16 +13,20 @@ class EchoServer():
     def __init__(self):
         self.__s = socket.socket()
         self.__s.bind(SERVERADDRESS)
-        self.__clientlist= []
-        self.__IPlist= []
+        self.__addr = ''
+        self.__clientlist = []
         
     def run(self):
         self.__s.listen()
         while True:
             client, addr = self.__s.accept()
+            self.__addr = addr[0]
+            print('addr:', self.__addr)
+            self._clientlist()
             try:
+                print('Connected by:', addr)
                 reqst= self._receive(client)
-                sent = reqst.decode()
+                sent = reqst
                 print('Sent:', sent)
                 #database = self._clientlist()
                 #print('DataBase):', database)
@@ -31,17 +35,17 @@ class EchoServer():
                 #msg= 'Hello'
                 #client.send(msg.encode())
                 print('cIP sent!')
-                client.send(reqst)
+                client.send(reqst.encode())
                 client.close()
                 sys.exit()
             except OSError:
-                print('Erreur lors de la réception du message.')
+                print('Erreur lors de la récepti[on du message.')
     
     def _receive(self, client):
         chunks = []
         finished = False
         while not finished:
-            client.settimeout(3)
+            client.settimeout(2)
             try:
                 data = client.recv(32)
             except:
@@ -51,36 +55,55 @@ class EchoServer():
             print(data)
             chunks.append(data)
             finished = data == b''
-        return b''.join(chunks)
-
+        bpp = b''.join(chunks).decode()[4:] #Les 4 premières lettres ervent a identifier le type de requète
+        code =b''.join(chunks).decode()[:4]
+        print('Code:', code)
+        return bpp
+ 
     def _clientlist(self):
-        if SERVERADDRESS[0] not in self.__clientlist:
-            self.__clientlist[:]= [SERVERADDRESS[0]]
-            print('ClientList:', self.__clientlist[:])
-            self.__IPlist[:] = [IP]
-            print('IPList:', self.__IPlist[:])
-            database= {self.__clientlist[i]: self.__IPlist[i] for i in range(0, len(self.__clientlist))}
-            return database
+        try:
+            with open('database.txt', 'r') as file:
+                datbase = file.read()
+                print('datbase:', datbase)
+        except:
+            datbase= []
+        if self.__addr not in datbase:
+            self.__clientlist += [self.__addr]
+            print('ClientList:', self.__clientlist)
+            #database= {self.__clientlist[i]: self.__IPlist[i] for i in range(0, len(self.__clientlist))}
+            #return database
 
 
 class EchoClient():
-    def __init__(self, IPrequest):
+    def __init__(self, IPrequest, choice):
         self.__request = IPrequest
-        print('IPrequest:', IPrequest)
         self.__s = socket.socket()
+        self.__choice = choice
     
     def run(self):
         try:
             self.__s.connect(SERVERADDRESS)
-            self._send(self.__request)
-            self._receive()
         except OSError:
             print('Serveur introuvable, connexion impossible.')
+        self._routechoice(self.__request, self.__choice)
+        self._receive()
         self.__s.close()
+
+    def _routechoice(self, var, choice):
+        if choice == '1':
+            self._send('send', var)
+        elif choice == '2':
+            self._datbase('dtbs', var)
+        elif choice == '3':
+            self._username('user', var)
+        elif choice == '4':
+            self._block('blck', var)
+        else:
+            print('error')
     
-    def _send(self, sentdata):
+    def _send(self, code, sentdata):
         totalsent = 0
-        rqs = sentdata
+        rqs = code.encode() + sentdata
         try:
             while totalsent < len(rqs):
                 print('Send Loop')
@@ -107,22 +130,19 @@ if __name__ == '__main__':
     #elif len(sys.argv) == 3 and sys.argv[1] == 'client':
         #EchoClient(sys.argv[2].encode()).run()
     elif len(sys.argv) == 2 and sys.argv[1] == 'client':
-        choice = input('Choose!\n\t1. request someone\'s IP\n\t2. Check out the database\n\t3. Change your username\n\t4. Block contact')
-        print(choice)
-        print(choice == '1')
+        choice = input('Choose!\n\t1. request someone\'s IP\n\t2. Check out the database\n\t3. Change your username\n\t4. Block contact\n')
         if choice == '1':
-            name = input('Dude\'s name please')
-            EchoClient(name.encode()).run()
+            name = input('Dude\'s name please\n')
+            EchoClient(name.encode(), '1').run()
         elif choice == '2':
-            password = input('Password?')
+            password = input('Password?\n')
             if password == 'echo1234':
                 pass
         elif choice == '3':
-            username = input('Username ?')
+            username = input('Username ?\n')
             pass
         elif choice == '4':
-            block = input('Contact to block ?')
+            block = input('Contact to block ?\n')
             pass
         else:
             print('Unknown command')
-        
