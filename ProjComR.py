@@ -7,6 +7,7 @@ import socket
 import sys
 import ast
 import json
+import time
 
 IP = socket.gethostbyname(socket.gethostname())
 SERVERADDRESS = (socket.gethostname(), 6000)
@@ -33,8 +34,6 @@ class EchoServer():
                 reqst= self._receive(client)
                 sent = reqst
                 self._routechoice(reqst[0], reqst[1])
-                client.close()
-                sys.exit()
             except OSError:
                 print('Erreur lors de la récepti[on du message.')
     
@@ -65,17 +64,29 @@ class EchoServer():
             self._username(message)
 
     def _IPrequest(self, IPreq):
+        found = False
         for elem in self.__database.keys():
             name = elem.split('.')[0]
             hostname = self.__database[elem][0]
             if elem == IPreq or name == IPreq or hostname == IPreq or hostname.split('.')[0] == IPreq:
                 IP = self.__database[elem][1]
-                msg = 'His IP address is ' + IP 
+                msg = 'His IP address is ' + IP
+                print(msg)
                 self.__client.send(msg.encode())
+                found = True
+        if not found:
+            msg = 'It seems {} cannot be found in the database'.format(IPreq)
+            print(msg)
+            self.__client.send(msg.encode())
 
     def _database(self, password):
         if password == 'echo1234':
             msg = json.dumps(self.__database, indent=2, ensure_ascii= False)
+            print('ok')
+            self.__client.send(msg.encode())
+        else:
+            msg = 'Wrong password'
+            print(msg)
             self.__client.send(msg.encode())
 
     def _clientlist(self):
@@ -89,7 +100,6 @@ class EchoServer():
 
         for elem in self.__database.keys():
             self.__namelist += [elem]
-            print('Pose problème:', self.__database[elem][1])
             self.__clientIPlist += [self.__database[elem][1]]
         
         if self.__addr not in self.__clientIPlist:
@@ -121,7 +131,6 @@ class EchoClient():
             print('Serveur introuvable, connexion impossible.')
         self._send(self.__request, self.__choice)
         self._receive()
-        self.__s.close()
     
     def _send(self, sentdata, code):
         totalsent = 0
@@ -136,27 +145,35 @@ class EchoClient():
     def _receive(self):
         chunks = []
         finished = False
+        time.sleep(3)
         while not finished:
-            data = self.__s.recv(512)
+            self.__s.settimeout(2)
+            try:
+                data = self.__s.recv(256)
+            except:
+                data = b''
             chunks.append(data)
             finished = data == b''
         print(b''.join(chunks).decode())
 
 if __name__ == '__main__':
-    if len(sys.argv) == 2 and sys.argv[1] == 'server':
-        EchoServer().run()
-    #elif len(sys.argv) == 3 and sys.argv[1] == 'client':
-        #EchoClient(sys.argv[2].encode()).run()
-    elif len(sys.argv) == 2 and sys.argv[1] == 'client':
-        choice = input('Choose!\n\t1. request someone\'s IP\n\t2. Check out the database\n\t3. Change your username\n\t4. Block contact\n')
-        if choice == '1':
-            name = input('Dude\'s name please\n')
-            EchoClient(name.encode(), '1').run()
-        elif choice == '2':
-            password = input('Password?\n')
-            EchoClient(password.encode(), '2').run()
-        elif choice == '3':
-            username = input('Username ?\n')
-            pass
+    while True:
+        if len(sys.argv) == 2 and sys.argv[1] == 'server':
+            EchoServer().run()
+        elif len(sys.argv) == 2 and sys.argv[1] == 'client':
+            choice = input('Choose!\n\t1. request someone\'s IP\n\t2. Check out the database\n\t3. Change your username\n\t4. Block contact\n')
+            if choice == '1':
+                name = input('Dude\'s name please\n')
+                EchoClient(name.encode(), '1').run()
+            elif choice == '2':
+                password = input('Password?\n')
+                EchoClient(password.encode(), '2').run()
+            elif choice == '3':
+                username = input('Username ?\n')
+                pass
+            elif choice == '4':
+                pass
+            else:
+                print('Unknown command')
         else:
-            print('Unknown command')
+            sys.exit()
