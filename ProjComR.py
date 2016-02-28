@@ -5,6 +5,8 @@
 
 import socket
 import sys
+import ast
+import json
 
 IP = socket.gethostbyname(socket.gethostname())
 SERVERADDRESS = (socket.gethostname(), 6000)
@@ -14,29 +16,23 @@ class EchoServer():
         self.__s = socket.socket()
         self.__s.bind(SERVERADDRESS)
         self.__addr = ''
-        self.__clientlist = []
+        self.__client = ''
+        self.__clientIPlist = []
         self.__namelist = []
+        self.__database = {}
         
     def run(self):
         self.__s.listen()
         while True:
             client, addr = self.__s.accept()
+            self.__client = client
             self.__addr = addr[0]
-            print('addr:', self.__addr)
             self._clientlist()
             try:
                 print('Connected by:', addr)
                 reqst= self._receive(client)
                 sent = reqst
-                print('Sent:', sent)
-                #database = self._clientlist()
-                #print('DataBase):', database)
-                #cIP = database[sent].encode()
-                #print('CorresIP:', cIP, 'Type:', type(cIP))
-                #msg= 'Hello'
-                #client.send(msg.encode())
-                print('cIP sent!')
-                client.send(reqst.encode())
+                self._routechoice(reqst[0], reqst[1])
                 client.close()
                 sys.exit()
             except OSError:
@@ -51,34 +47,65 @@ class EchoServer():
                 data = client.recv(32)
             except:
                 data= b''
-                print('Timeout')
-                pass
-            print(data)
             chunks.append(data)
             finished = data == b''
-        bpp = b''.join(chunks).decode()[4:] #Les 4 premières lettres servent a identifier le type de requète
-        code =b''.join(chunks).decode()[:4]
+        message = b''.join(chunks).decode()[1:] #La première lettre sert a identifier le type de requète
+        code =b''.join(chunks).decode()[:1]
         print('Code:', code)
-        return bpp
- 
+        return (code, message)
+
+    def _routechoice(self, code, message):
+        print('routechoice:', code, message)
+        if code == '1':
+            print('Chose IPrequest')
+            self._IPrequest(message)
+        if code == '2':
+            self._database(message)
+        if code == '3':
+            self._username(message)
+
+    def _IPrequest(self, IPreq):
+        for elem in self.__database.keys():
+            name = elem.split('.')[0]
+            hostname = self.__database[elem][0]
+            if elem == IPreq or name == IPreq or hostname == IPreq or hostname.split('.')[0] == IPreq:
+                IP = self.__database[elem][1]
+                msg = 'His IP address is ' + IP 
+                self.__client.send(msg.encode())
+
+    def _database(self, password):
+        if password == 'echo1234':
+            msg = json.dumps(self.__database, indent=2, ensure_ascii= False)
+            self.__client.send(msg.encode())
+
     def _clientlist(self):
         try:
             with open('database.txt', 'r') as file:
-                datbase = file.read()
-                print('datbase:', datbase)
+                datb = file.read()
+                datbase = ast.literal_eval(datb)
+                self.__database = datbase
         except:
-            datbase= []
-        if self.__addr not in datbase:
-            self.__clientlist += [self.__addr]
-            print('ClientList:', self.__clientlist)
-            name = socket.gethostbyaddr(self.__addr)
-            print('Name:', name)
+            datbase= {}
+
+        for elem in self.__database.keys():
+            self.__namelist += [elem]
+            print('Pose problème:', self.__database[elem][1])
+            self.__clientIPlist += [self.__database[elem][1]]
+        
+        if self.__addr not in self.__clientIPlist:
+            self.__clientIPlist += [self.__addr]
+            print('ClientIPList:', self.__clientIPlist)
+            name = socket.gethostbyaddr(self.__addr)[0]
+            print('Client Name:', name)
             self.__namelist += [name]
-            maxi = len(self.__clientlist)
-            dbse = {self.__clientlist[i] : [self.__clientlist[i], self.__namelist[i]] for i in range(0, maxi)}
-            with open('database.txt', 'w') as file:
-                file.write(str(dbse))
-            #return database
+            self._writedatabase()
+                
+    def _writedatabase(self):
+        maxi = len(self.__clientIPlist)
+        dbse = {self.__namelist[i] : [self.__namelist[i], self.__clientIPlist[i]] for i in range(0, maxi)}
+        self.__database = dbse
+        with open('database.txt', 'w') as file:
+            file.write(str(dbse))
 
 
 class EchoClient():
@@ -92,28 +119,15 @@ class EchoClient():
             self.__s.connect(SERVERADDRESS)
         except OSError:
             print('Serveur introuvable, connexion impossible.')
-        self._routechoice(self.__request, self.__choice)
+        self._send(self.__request, self.__choice)
         self._receive()
         self.__s.close()
-
-    def _routechoice(self, var, choice):
-        if choice == '1':
-            self._send('send', var)
-        elif choice == '2':
-            self._datbase('dtbs', var)
-        elif choice == '3':
-            self._username('user', var)
-        elif choice == '4':
-            self._block('blck', var)
-        else:
-            print('error')
     
-    def _send(self, code, sentdata):
+    def _send(self, sentdata, code):
         totalsent = 0
         rqs = code.encode() + sentdata
         try:
             while totalsent < len(rqs):
-                print('Send Loop')
                 sent = self.__s.send(rqs[totalsent:])
                 totalsent += sent
         except OSError:
@@ -122,11 +136,8 @@ class EchoClient():
     def _receive(self):
         chunks = []
         finished = False
-        print('Start')
         while not finished:
-            print('Loop')
             data = self.__s.recv(512)
-            print('Data:', data.decode())
             chunks.append(data)
             finished = data == b''
         print(b''.join(chunks).decode())
@@ -143,13 +154,9 @@ if __name__ == '__main__':
             EchoClient(name.encode(), '1').run()
         elif choice == '2':
             password = input('Password?\n')
-            if password == 'echo1234':
-                pass
+            EchoClient(password.encode(), '2').run()
         elif choice == '3':
             username = input('Username ?\n')
-            pass
-        elif choice == '4':
-            block = input('Contact to block ?\n')
             pass
         else:
             print('Unknown command')
