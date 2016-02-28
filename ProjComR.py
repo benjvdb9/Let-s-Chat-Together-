@@ -25,13 +25,12 @@ class EchoServer():
     def run(self):
         self.__s.listen()
         while True:
-            client, addr = self.__s.accept()
-            self.__client = client
+            self.__client, addr = self.__s.accept()
             self.__addr = addr[0]
             self._clientlist()
             try:
                 print('Connected by:', addr)
-                reqst= self._receive(client)
+                reqst= self._receive(self.__client)
                 sent = reqst
                 self._routechoice(reqst[0], reqst[1])
             except OSError:
@@ -62,6 +61,9 @@ class EchoServer():
             self._database(message)
         if code == '3':
             self._username(message)
+        if code == '4':
+            print('Closing server')
+            self._quit()
 
     def _IPrequest(self, IPreq):
         found = False
@@ -71,23 +73,23 @@ class EchoServer():
             if elem == IPreq or name == IPreq or hostname == IPreq or hostname.split('.')[0] == IPreq:
                 IP = self.__database[elem][1]
                 msg = 'His IP address is ' + IP
-                print(msg)
                 self.__client.send(msg.encode())
                 found = True
         if not found:
             msg = 'It seems {} cannot be found in the database'.format(IPreq)
-            print(msg)
             self.__client.send(msg.encode())
 
     def _database(self, password):
         if password == 'echo1234':
             msg = json.dumps(self.__database, indent=2, ensure_ascii= False)
-            print('ok')
             self.__client.send(msg.encode())
         else:
             msg = 'Wrong password'
-            print(msg)
             self.__client.send(msg.encode())
+
+    def _quit(self):
+        self.__client.close()
+        sys.exit()
 
     def _clientlist(self):
         try:
@@ -131,6 +133,11 @@ class EchoClient():
             print('Serveur introuvable, connexion impossible.')
         self._send(self.__request, self.__choice)
         self._receive()
+
+    def leave(self):
+        print('Closing server')
+        self.__s.close()
+        sys.exit()
     
     def _send(self, sentdata, code):
         totalsent = 0
@@ -161,7 +168,7 @@ if __name__ == '__main__':
         if len(sys.argv) == 2 and sys.argv[1] == 'server':
             EchoServer().run()
         elif len(sys.argv) == 2 and sys.argv[1] == 'client':
-            choice = input('Choose!\n\t1. request someone\'s IP\n\t2. Check out the database\n\t3. Change your username\n\t4. Block contact\n')
+            choice = input('Choose!\n\t1. request someone\'s IP\n\t2. Check out the database\n\t3. Change your username\n\t4. Leave\n')
             if choice == '1':
                 name = input('Dude\'s name please\n')
                 EchoClient(name.encode(), '1').run()
@@ -172,7 +179,9 @@ if __name__ == '__main__':
                 username = input('Username ?\n')
                 pass
             elif choice == '4':
-                pass
+                EchoClient(b'', '4').run()
+                time.sleep(1)
+                EchoClient(b'', '').leave()
             else:
                 print('Unknown command')
         else:
