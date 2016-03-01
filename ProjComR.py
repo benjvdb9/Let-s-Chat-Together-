@@ -1,8 +1,3 @@
-#!/usr/bin/env python3
-# echo.py
-# author: Sébastien Combéfis
-# version: February 15, 2016
-
 import socket
 import sys
 import ast
@@ -20,6 +15,7 @@ class EchoServer():
         self.__client = ''
         self.__clientIPlist = []
         self.__namelist = []
+        self.__userlist = []
         self.__database = {}
         
     def run(self):
@@ -68,9 +64,8 @@ class EchoServer():
     def _IPrequest(self, IPreq):
         found = False
         for elem in self.__database.keys():
-            name = elem.split('.')[0]
             hostname = self.__database[elem][0]
-            if elem == IPreq or name == IPreq or hostname == IPreq or hostname.split('.')[0] == IPreq:
+            if elem == IPreq or hostname == IPreq or hostname.split('.')[0] == IPreq:
                 IP = self.__database[elem][1]
                 msg = 'His IP address is ' + IP
                 self.__client.send(msg.encode())
@@ -87,6 +82,18 @@ class EchoServer():
             msg = 'Wrong password'
             self.__client.send(msg.encode())
 
+    def _username(self, username):
+        i = 0
+        for elm in self.__userlist:
+            if elm == socket.gethostbyaddr(self.__addr)[0]:
+                self.__userlist[i] = username
+                i+=1
+                print(username, 'replaced', elm)
+            else:
+                i += 1
+        print(self.__userlist)
+        self._writedatabase()
+        
     def _quit(self):
         self.__client.close()
         sys.exit()
@@ -101,7 +108,8 @@ class EchoServer():
             datbase= {}
 
         for elem in self.__database.keys():
-            self.__namelist += [elem]
+            self.__userlist += [elem]
+            self.__namelist += [self.__database[elem][0]]
             self.__clientIPlist += [self.__database[elem][1]]
         
         if self.__addr not in self.__clientIPlist:
@@ -109,12 +117,13 @@ class EchoServer():
             print('ClientIPList:', self.__clientIPlist)
             name = socket.gethostbyaddr(self.__addr)[0]
             print('Client Name:', name)
+            self.__userlist += [name]
             self.__namelist += [name]
             self._writedatabase()
                 
     def _writedatabase(self):
         maxi = len(self.__clientIPlist)
-        dbse = {self.__namelist[i] : [self.__namelist[i], self.__clientIPlist[i]] for i in range(0, maxi)}
+        dbse = {self.__userlist[i] : [self.__namelist[i], self.__clientIPlist[i]] for i in range(0, maxi)}
         self.__database = dbse
         with open('database.txt', 'w') as file:
             file.write(str(dbse))
@@ -177,7 +186,7 @@ if __name__ == '__main__':
                 EchoClient(password.encode(), '2').run()
             elif choice == '3':
                 username = input('Username ?\n')
-                pass
+                EchoClient(username.encode(), '3').run()
             elif choice == '4':
                 EchoClient(b'', '4').run()
                 time.sleep(1)

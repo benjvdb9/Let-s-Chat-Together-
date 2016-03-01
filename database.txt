@@ -1,1 +1,1 @@
-{'Mioznitnirn.lan': ['Mioznitnirn.lan', '192.168.1.37']}
+{'Benjamin': ['Mioznitnirn.lan', '192.168.1.37'], 'Benjamin.offline': ['Mioznitnirn', '127.0.0.1']}
