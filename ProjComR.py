@@ -13,6 +13,7 @@ class EchoServer():
         self.__s.bind(SERVERADDRESS)
         self.__addr = ''
         self.__client = ''
+        self.__name = ''
         self.__clientIPlist = []
         self.__namelist = []
         self.__userlist = []
@@ -59,16 +60,22 @@ class EchoServer():
             print('Chose username')
             self._username(message)
         if code == '4':
+            self._checkonline()
+        if code == '5':
+            print('Client leaving server')
+            self._leave()
+        if code == '6':
             print('Closing server')
             self._quit()
 
     def _IPrequest(self, IPreq):
         found = False
-        for elem in self.__database.keys():
-            hostname = self.__database[elem][0]
-            if elem == IPreq or hostname == IPreq or hostname.split('.')[0] == IPreq:
+        for elem in self.__database.keys():  #exemples: elem = Mioznitnirn.lan
+            hostname = elem.split('.')[0]              #hostname= Mioznitnirn
+            username = self.__database[elem][0]        #username= Benjamin
+            if elem == IPreq or hostname == IPreq or username == IPreq:
                 IP = self.__database[elem][1]
-                msg = 'His IP address is ' + IP + ' ({})\n'.format(hostname)
+                msg = 'His IP address is ' + IP + ' ({})\n'.format(elem)
                 self.__client.send(msg.encode())
                 found = True
         if not found:
@@ -94,10 +101,27 @@ class EchoServer():
             else:
                 i += 1
         self._writedatabase()
+        try:
+            self.__client.send(msg.encode())
+        except:
+            self.__client.send(b'An error occured')
+
+    def _checkonline(self):
+        onlinelist= []
+        for elm in self.__database:
+            options = self.__database[elm]
+            if options[2] == '1':
+                onlinelist += [options[0] + ' (' + elm+ ')']
+        msg = '\n\t' + '\n\t'.join(onlinelist)
+        print(msg)
         self.__client.send(msg.encode())
-        
+
+    def _leave(self):
+        self.__database[self.__name][2] = '0'
+            
     def _quit(self):
         self.__client.close()
+        self.__database[self.__name][2] = '0'
         sys.exit()
 
     def _clientlist(self):
@@ -108,25 +132,32 @@ class EchoServer():
                 self.__database = datbase
         except:
             datbase= {}
+            self.__database = datbase
 
         self.__userlist = []
         self.__namelist = []
         self.__clientIPlist = []
+        self.__authacces = []
         for elem in self.__database.keys():
-            self.__userlist += [elem]
-            self.__namelist += [self.__database[elem][0]]
+            self.__namelist += [elem]
+            self.__userlist += [self.__database[elem][0]]
             self.__clientIPlist += [self.__database[elem][1]]
+            self.__authacces += [self.__database[elem][2]]
+
+        self.__name = socket.gethostbyaddr(self.__addr)[0]
+        self.__database[self.__name][2] = '1'
+            
         if self.__addr not in self.__clientIPlist:
             self.__clientIPlist += [self.__addr]
-            name = socket.gethostbyaddr(self.__addr)[0]
             print('New client!', name, self.__addr)
-            self.__userlist += [name]
-            self.__namelist += [name]
+            self.__userlist += [self.__name]
+            self.__namelist += [self.__name]
+            self.__authacces += '1'
             self._writedatabase()
                 
     def _writedatabase(self):
         maxi = len(self.__clientIPlist)
-        dbse = {self.__userlist[i] : [self.__namelist[i], self.__clientIPlist[i]] for i in range(0, maxi)}
+        dbse = {self.__namelist[i] : [self.__userlist[i], self.__clientIPlist[i], self.__authacces[i]] for i in range(0, maxi)}
         self.__database = dbse
         with open('database.txt', 'w') as file:
             file.write(str(dbse))
@@ -146,8 +177,11 @@ class EchoClient():
         self._send(self.__request, self.__choice)
         self._receive()
 
-    def leave(self):
-        print('Closing server')
+    def leave(self, Closing= False):
+        if Closing:
+            print('Closing server')
+        else:
+            print('Leaving server')
         self.__s.close()
         sys.exit()
     
@@ -168,7 +202,7 @@ class EchoClient():
         while not finished:
             self.__s.settimeout(2)
             try:
-                data = self.__s.recv(256)
+                data = self.__s.recv(32)
             except:
                 data = b''
             chunks.append(data)
@@ -180,7 +214,7 @@ if __name__ == '__main__':
         if len(sys.argv) == 2 and sys.argv[1] == 'server':
             EchoServer().run()
         elif len(sys.argv) == 2 and sys.argv[1] == 'client':
-            choice = input('Commands:\n\t1. request someone\'s IP\n\t2. Check out the database\n\t3. Change your username\n\t4. Leave\n')
+            choice = input('Commands:\n\t1. request someone\'s IP\n\t2. Check out the database\n\t3. Change your username\n\t4. Check out the people connected to the server\n\t5. Leave\n\t6. Close the server\n')
             if choice == '1':
                 name = input("Who's IP address would you like?\n")
                 EchoClient(name.encode(), '1').run()
@@ -192,8 +226,16 @@ if __name__ == '__main__':
                 EchoClient(username.encode(), '3').run()
             elif choice == '4':
                 EchoClient(b'', '4').run()
+            elif choice == '5':
+                EchoClient(b'', '5').run()
                 time.sleep(1)
                 EchoClient(b'', '').leave()
+            elif choice == '6':
+                password = input('Password?\n')
+                if password == 'echo1234':
+                    EchoClient(b'', '6').run()
+                    time.sleep(1)
+                    EchoClient(b'', '').leave(True)
             else:
                 print('Unknown command')
         else:

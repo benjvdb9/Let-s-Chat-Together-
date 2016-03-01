@@ -1,16 +1,22 @@
 import socket
 import sys
 import threading
-import pdb
-
+import ast
+import time
 
 class Chat():
     def __init__(self, host=socket.gethostname(), port= 5000):
         s= socket.socket(type=socket.SOCK_DGRAM)
         s.settimeout(0.5)
         s.bind((host, port))
+        self.__host = host
+        self.__linelen= 0
         self.__s= s
         print('Écoute sur {}: {}'.format(host, port))
+        with open('database.txt', 'r') as file:
+            datbase= file.read()
+            file.close()
+        self.__database= ast.literal_eval(datbase)
 
     def run(self):
         handlers = {
@@ -18,22 +24,26 @@ class Chat():
             '/quit': self._quit,
             '/join': self._join,
             '/send': self._send,
-            '/list': self._list
+            '/list': self._list,
+            '/r': self._refresh
         }
         self.__running = True
         self.__address = None
         self.__clientlist= []
         self.__tokenslist= []
         self.__portlist= []
+        self.__index = 0
         threading.Thread(target= self._recieve).start()
+        threading.Thread(target= self._refreshdatabase).start()
         while self.__running:
-            line= sys.stdin.readline().rstrip() + ' ' #exm, str: /join Mioz 6000
+            line1= sys.stdin.readline()
+            line= line1.rstrip() + ' ' #exm, str: /join Mioz 6000
             command = line[:line.index(' ')] # str: /join
             param = line[line.index(' ')+1:].rstrip() # str: host et port
             if command in handlers:
                 try:
                     handlers[command]() if param == '' else handlers[command](param)
-                except:
+                except SyntaxError:
                     print("Erreur lors de l'exécution de la commande.")
             else:
                 print('Commande inconnue:', command)
@@ -68,11 +78,15 @@ class Chat():
     def _send(self, param):
         if self.__address is not None:
             try:
-                message= param.encode()
+                sentfrom = self.__database[self.__host][0]
+                sentto= self.__database[self.__address[0]][0]
+                message= b'from ' + sentfrom.encode() + b': ' + param.encode()
                 totalsent = 0
                 while totalsent < len(message):
                     sent= self.__s.sendto(message[totalsent:], self.__address)
                     totalsent += sent
+                #print(''.join(lenlist))
+                print('to {}: {}'.format(sentto, param))
             except OSError:
                 print('Erreur lors de la réception du message')
         else:
@@ -84,6 +98,7 @@ class Chat():
             try:
                 data, address = self.__s.recvfrom(512)
                 print(data.decode())
+                sys.stdout.flush()
             except socket.timeout:
                 pass
             except OSError:
@@ -96,9 +111,17 @@ class Chat():
             print('    ' + self.__clientlist[i], '['+ str(self.__tokenslist[i])+ '] (port:', str(self.__portlist[i]) + ')')
             i +=1
         print('---')
-            
-    def Address(self):
-        return self.__address
+
+    def _refresh(self):
+        pass
+
+    def _refreshdatabase(self):
+        while self.__running:
+            time.sleep(10)
+            with open('database.txt', 'r') as file:
+                self.__database= ast.literal_eval(file.read())
+                file.close()
+                
 
 if __name__ == '__main__':
     if len(sys.argv) == 3:
