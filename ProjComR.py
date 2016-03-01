@@ -22,10 +22,10 @@ class EchoServer():
         self.__s.listen()
         while True:
             self.__client, addr = self.__s.accept()
+            print('Connected by:', addr)
             self.__addr = addr[0]
             self._clientlist()
             try:
-                print('Connected by:', addr)
                 reqst= self._receive(self.__client)
                 sent = reqst
                 self._routechoice(reqst[0], reqst[1])
@@ -45,7 +45,6 @@ class EchoServer():
             finished = data == b''
         message = b''.join(chunks).decode()[1:] #La première lettre sert a identifier le type de requète
         code =b''.join(chunks).decode()[:1]
-        print('Code:', code)
         return (code, message)
 
     def _routechoice(self, code, message):
@@ -54,8 +53,10 @@ class EchoServer():
             print('Chose IPrequest')
             self._IPrequest(message)
         if code == '2':
+            print('Chose database')
             self._database(message)
         if code == '3':
+            print('Chose username')
             self._username(message)
         if code == '4':
             print('Closing server')
@@ -67,7 +68,7 @@ class EchoServer():
             hostname = self.__database[elem][0]
             if elem == IPreq or hostname == IPreq or hostname.split('.')[0] == IPreq:
                 IP = self.__database[elem][1]
-                msg = 'His IP address is ' + IP
+                msg = 'His IP address is ' + IP + ' ({})\n'.format(hostname)
                 self.__client.send(msg.encode())
                 found = True
         if not found:
@@ -84,15 +85,16 @@ class EchoServer():
 
     def _username(self, username):
         i = 0
-        for elm in self.__userlist:
+        for elm in self.__namelist:
             if elm == socket.gethostbyaddr(self.__addr)[0]:
+                msg = username + ' replaced ' + self.__userlist[i]
+                print(msg)
                 self.__userlist[i] = username
                 i+=1
-                print(username, 'replaced', elm)
             else:
                 i += 1
-        print(self.__userlist)
         self._writedatabase()
+        self.__client.send(msg.encode())
         
     def _quit(self):
         self.__client.close()
@@ -107,16 +109,17 @@ class EchoServer():
         except:
             datbase= {}
 
+        self.__userlist = []
+        self.__namelist = []
+        self.__clientIPlist = []
         for elem in self.__database.keys():
             self.__userlist += [elem]
             self.__namelist += [self.__database[elem][0]]
             self.__clientIPlist += [self.__database[elem][1]]
-        
         if self.__addr not in self.__clientIPlist:
             self.__clientIPlist += [self.__addr]
-            print('ClientIPList:', self.__clientIPlist)
             name = socket.gethostbyaddr(self.__addr)[0]
-            print('Client Name:', name)
+            print('New client!', name, self.__addr)
             self.__userlist += [name]
             self.__namelist += [name]
             self._writedatabase()
@@ -177,9 +180,9 @@ if __name__ == '__main__':
         if len(sys.argv) == 2 and sys.argv[1] == 'server':
             EchoServer().run()
         elif len(sys.argv) == 2 and sys.argv[1] == 'client':
-            choice = input('Choose!\n\t1. request someone\'s IP\n\t2. Check out the database\n\t3. Change your username\n\t4. Leave\n')
+            choice = input('Commands:\n\t1. request someone\'s IP\n\t2. Check out the database\n\t3. Change your username\n\t4. Leave\n')
             if choice == '1':
-                name = input('Dude\'s name please\n')
+                name = input("Who's IP address would you like?\n")
                 EchoClient(name.encode(), '1').run()
             elif choice == '2':
                 password = input('Password?\n')
