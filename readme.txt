@@ -26,19 +26,19 @@ plus accesible du tout). Ci on souhaite juste quitter le chat, il faut utiliser 
 -On suppose que les appareils qui ce connecte au serveur seront tous nommés differaments
 (avoir 2 "ordininateur-de-benjamin" poserai problème car les clients sont stockées dans un dictionnaire)
 
--Lorsequ'on le code principale (ProjComP.py), ci on ne mentionne rien le socket ce connectera a l'appareil
+-Lorsequ'on utilise le code principale (ProjComP.py), ci on ne mentionne rien le socket ce connectera a l'appareil
 que vous utiliser sur le port 5000. Mais il est possible de changer l'hote est le numero de port ci on le 
 lance avec cmd. Exm: (cmd:) py ProjComP.py ordinateur3 6000, host= ordinateur3, port= 6000
 
 -Ci on écrit * a la place de 'ordinateur3' dans l'exemple précedent On utilisera automatiquement
-a l'appareil qu'on utilise (py ProjComP.py * 6000 ----> connecté a Mioznitnirn : 6000)
+le nom de l'appareil qu'on utilise (py ProjComP.py * 6000 ----> connecté a Mioznitnirn : 6000)
 
--Le code principale contien une commande '/help' qui affiche toutes les commandes possibles
+-Le code principale contient une commande '/help' qui affiche toutes les commandes possibles
 
--Il est possible de se donner un pseudo et les autres clients peuvent recherché un address IP
+-Il est possible de se donner un pseudo et les autres clients peuvent rechercher un address IP
 grace a ce pseudo
 
--ProjComP.py conent une fonction list mais celle-ci ne ce rapelle que des gens auxquels on c'est
+-ProjComP.py contient une fonction list mais celle-ci ne ce rapelle que des gens auxquels on c'est
 connecté recemment (Il oublie tous une fois qu'on quitte)
 
 -la base de donné contient un dictionaire {hostname: [pseudo, addressIP, en ligne?]}
