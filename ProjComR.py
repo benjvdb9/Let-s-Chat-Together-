@@ -31,7 +31,7 @@ class EchoServer():
                 sent = reqst
                 self._routechoice(reqst[0], reqst[1])
             except OSError:
-                print('Erreur lors de la récepti[on du message.')
+                print('Error when receiving message.')
     
     def _receive(self, client):
         chunks = []
@@ -60,6 +60,7 @@ class EchoServer():
             print('Chose username')
             self._username(message)
         if code == '4':
+            print('Chose Checkonline')
             self._checkonline()
         if code == '5':
             print('Client leaving server')
@@ -67,6 +68,9 @@ class EchoServer():
         if code == '6':
             print('Closing server')
             self._quit()
+        if code == '7':
+            print('Chose init')
+            self.__client.send(message.encode())
 
     def _IPrequest(self, IPreq):
         found = False
@@ -173,7 +177,7 @@ class EchoClient():
         try:
             self.__s.connect(SERVERADDRESS)
         except OSError:
-            print('Serveur introuvable, connexion impossible.')
+            print('Server not found, connexion impossible.')
         self._send(self.__request, self.__choice)
         self._receive()
 
@@ -193,7 +197,7 @@ class EchoClient():
                 sent = self.__s.send(rqs[totalsent:])
                 totalsent += sent
         except OSError:
-            print("Erreur lors de l'envoi du message.")
+            print("Error when sending message.")
 
     def _receive(self):
         chunks = []
@@ -236,6 +240,10 @@ if __name__ == '__main__':
                     EchoClient(b'', '6').run()
                     time.sleep(1)
                     EchoClient(b'', '').leave(True)
+                else:
+                    print('Wrong password')
+            elif choice == 'init': #Sert a se connecter au seveur et rien d'autre
+                EchoClient(b'', '7').run() #Servira sourtout dans ProjComP.py
             else:
                 print('Unknown command')
         else:

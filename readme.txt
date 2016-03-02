@@ -11,3 +11,8 @@ avec laquelle on veut communiquer
 
 -On ne peut quitter le serveur qu'en utilisant la fonctions 6 (ceci fermera le serveur et il ne sera
 plus accesible du tout). Ci on souhaite juste quitter le chat, il faut utiliser la foction 5
+
+-On suppose qu'une machine ne change pas d'addresse IP après c'être connecté au serveur
+
+-On suppose que les appareils qui ce connecte au serveur seront tous nommés differaments
+(avoir 2 "ordininateur-de-benjamin" poserai problème car les clients sont stockées dans un dictionnaire) 
