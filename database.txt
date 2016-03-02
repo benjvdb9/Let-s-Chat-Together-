@@ -1,1 +1,1 @@
-{'Mioznitnirn': ['Benjamin.offline', '127.0.0.1', '0'], 'Mioznitnirn.lan': ['Benjamin.home', '192.168.1.37', '0'], 'Mioznitnirn.ecam.be': ['Benjamin.ecam', '172.17.32.86', '0']}
+{'Mioznitnirn.ecam.be': ['Benjamin.ecam', '172.17.32.86', '0'], 'Mioznitnirn': ['Benjamin.offline', '127.0.0.1', '0'], 'Mioznitnirn.lan': ['benjvdb9', '192.168.1.61', '1']}

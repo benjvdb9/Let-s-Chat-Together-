@@ -149,7 +149,7 @@ class EchoServer():
             
         if self.__addr not in self.__clientIPlist:
             self.__clientIPlist += [self.__addr]
-            print('New client!', name, self.__addr)
+            print('New client!', self.__name, self.__addr)
             self.__userlist += [self.__name]
             self.__namelist += [self.__name]
             self.__authacces += '1'
