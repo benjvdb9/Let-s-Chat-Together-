@@ -53,7 +53,7 @@ class Chat():
                 try:
                     handlers[command]() if param == '' else handlers[command](param)
                 except:
-                    if not command == '/exit':
+                    if not command == '/end':
                         print("An error occured during the execution of the command.")
             else:
                 print('Unknown Command:', command)
